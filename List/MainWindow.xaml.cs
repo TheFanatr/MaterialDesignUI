@@ -57,7 +57,7 @@ namespace List
                         Height = 75
                     }
                 };
-                Label sectionLabel = new Label
+                Label sectionHeaderLabel = new Label
                 {
                     Content = sectionInput.Content.Text,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -66,7 +66,7 @@ namespace List
                     FontWeight = FontWeights.Light,
                     FontFamily = new FontFamily("Nexa Light")
                 };
-                Button sectionExpansionChevron = new Button
+                Button sectionExpansionButton = new Button
                 {
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -97,8 +97,8 @@ namespace List
                         Kind = PackIconKind.Close
                     }
                 };
-                MenuItem sectionSeparatorExpansionMenuItem = new MenuItem { Header = "Collapse Section" };
-                MenuItem sectionSeparatorDeletionMenuItem = new MenuItem { Header = "Delete Section" };
+                MenuItem sectionExpansionMenuItem = new MenuItem { Header = "Collapse Section" };
+                MenuItem sectionDeletionMenuItem = new MenuItem { Header = "Delete Section" };
                 StackPanel sectionSeparator = new StackPanel
                 {
                     Background = Brushes.Transparent,
@@ -109,14 +109,14 @@ namespace List
                     {
                         Items =
                         {
-                            sectionSeparatorExpansionMenuItem,
-                            sectionSeparatorDeletionMenuItem
+                            sectionExpansionMenuItem,
+                            sectionDeletionMenuItem
                         }
                     },
                     Children =
                     {
-                        sectionExpansionChevron,
-                        sectionLabel,
+                        sectionExpansionButton,
+                        sectionHeaderLabel,
                         sectionDeletionButton
                     }
                 };
@@ -125,11 +125,19 @@ namespace List
                     Orientation = Orientation.Horizontal,
                     FlowDirection = FlowDirection.LeftToRight
                 };
-                double sectionElementContainerHeight = 0;
-                DoubleAnimation sectionElementContainerHeightAnimation = new DoubleAnimation { Duration = TimeSpan.FromSeconds(.2) };
+                double sectionElementContainerRecordedHeight = 0;
                 sectionElementContainer.Children.Add(sectionElementAdditionButton);
                 list.Children.Add(sectionSeparator);
+                ThicknessAnimation sectionMarginOpeningAnimation = new ThicknessAnimation
+                {
+                    Duration = TimeSpan.FromSeconds(1),
+                    From = new Thickness(-Width, 15, 0, 0),
+                    EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseOut },
+                    FillBehavior = FillBehavior.Stop
+                };
+                sectionSeparator.BeginAnimation(MarginProperty, sectionMarginOpeningAnimation);
                 list.Children.Add(sectionElementContainer);
+                sectionElementContainer.BeginAnimation(MarginProperty, sectionMarginOpeningAnimation);
                 sectionElementAdditionButton.Click += (sI, eI) =>
                 {
                     Input elementInput = new Input();
@@ -174,7 +182,15 @@ namespace List
                         elementContentGrid.Children.Add(elementTextBlock);
                         elementContentGrid.Children.Add(elementCheckBox);
                         elementContentGrid.Children.Add(elementPackIcon);
-                        sectionElementContainer.Children.Insert(sectionElementContainer.Children.IndexOf(sectionElementAdditionButton),element);
+                        sectionElementContainer.Children.Insert(sectionElementContainer.Children.IndexOf(sectionElementAdditionButton), element);
+                        element.BeginAnimation(WidthProperty, new DoubleAnimation
+                        {
+                            Duration = TimeSpan.FromSeconds(.2),
+                            From = 0,
+                            To = element.Width,
+                            EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseOut },
+                            FillBehavior = FillBehavior.Stop
+                        });
                         elementCheckBox.Checked += (sII, eII) =>
                         {
                             element.Background = FindResource("PrimaryHueMidBrush") as Brush;
@@ -191,28 +207,50 @@ namespace List
                         };
                     }
                 };
-                sectionExpansionChevron.Click += (sI, eI) =>
+                sectionExpansionButton.Click += ToggleExpansion;
+                sectionExpansionMenuItem.Click += ToggleExpansion;
+                void ToggleExpansion(object sI, RoutedEventArgs eI)
                 {
-                    // TODO: Compact and group together animation code.
-                    // TODO: Add animation for adding both sections and elements to sections.
-                    if (sectionElementContainer.ActualHeight >= sectionElementAdditionButton.ActualHeight) sectionElementContainerHeight = sectionElementContainer.ActualHeight;
-                    sectionElementContainerHeightAnimation.From = sectionElementContainer.ActualHeight;
-                    sectionElementContainerHeightAnimation.To = sectionElementContainer.ActualHeight != 0 ? 0 : sectionElementContainerHeight;
+                    // TODO: Make chevron direction switing work properly.
+                    // TODO: Make (sugg: bool-based) system for switchin extension animation mid completion.
+                    // ----  NOTE: Switch between using the last recorded height and 0 for to values.
+                    // ----  NOTE: Essentially the same as current one but it checks the bool instead of the height (in the inline if).
+                    DoubleAnimation sectionElementContainerHeightAnimation = new DoubleAnimation
+                    {
+                        Duration = TimeSpan.FromSeconds(1),
+                        From = sectionElementContainer.ActualHeight,
+                        To = sectionElementContainer.ActualHeight != 0 ? 0 : sectionElementContainerRecordedHeight,
+                        EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseOut }
+                    };
+                    sectionElementContainerHeightAnimation.Completed += (sII, eII) =>
+                    {
+                        if (sectionElementContainer.ActualHeight >= sectionElementAdditionButton.ActualHeight)
+                        {
+                            sectionElementContainer.BeginAnimation(HeightProperty, null);
+                            sectionElementContainer.Height = double.NaN;
+                        }
+                        (sectionExpansionButton.Content as PackIcon).Kind = (sectionExpansionButton.Content as PackIcon).Kind == PackIconKind.ChevronDown ? PackIconKind.ChevronUp : PackIconKind.ChevronDown;
+                    };
+                    if (sectionElementContainer.ActualHeight >= sectionElementAdditionButton.ActualHeight) sectionElementContainerRecordedHeight = sectionElementContainer.ActualHeight;
                     sectionElementContainer.BeginAnimation(HeightProperty, sectionElementContainerHeightAnimation);
-                    Console.WriteLine(sectionElementContainer.Height);
                 };
-                sectionElementContainerHeightAnimation.Completed += (sI, eI) =>
+                sectionDeletionButton.Click += DeleteSection;
+                sectionDeletionMenuItem.Click += DeleteSection;
+                void DeleteSection(object sI, RoutedEventArgs eI)
                 {
-                    if (sectionElementContainer.ActualHeight >= sectionElementAdditionButton.ActualHeight)
-                    { 
-                        sectionElementContainer.BeginAnimation(HeightProperty, null);
-                        sectionElementContainer.Height = double.NaN;
-                    }
-                };
-                sectionDeletionButton.Click += (sI, eI) =>
-                {
-                    list.Children.Remove(sectionSeparator);
-                    list.Children.Remove(sectionElementContainer);
+                    ThicknessAnimation sectionMarginClosingAnimation = new ThicknessAnimation
+                    {
+                        Duration = TimeSpan.FromSeconds(1),
+                        To = new Thickness(-Width, 15, Width, 0),
+                        EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseIn }
+                    };
+                    sectionSeparator.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
+                    sectionElementContainer.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
+                    (sectionMarginClosingAnimation.CreateClock()).Completed += (sII, eII) =>
+                    {
+                        list.Children.Remove(sectionSeparator);
+                        list.Children.Remove(sectionElementContainer);
+                    };
                 };
                 sectionElementContainer.SizeChanged += (sI, eI) =>
                 {
