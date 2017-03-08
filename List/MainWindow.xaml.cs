@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -207,19 +208,17 @@ namespace List
                         };
                     }
                 };
+                bool test2 = false;
                 sectionExpansionButton.Click += ToggleExpansion;
                 sectionExpansionMenuItem.Click += ToggleExpansion;
                 void ToggleExpansion(object sI, RoutedEventArgs eI)
                 {
-                    // TODO: Make chevron direction switing work properly.
-                    // TODO: Make (sugg: bool-based) system for switchin extension animation mid completion.
-                    // ----  NOTE: Switch between using the last recorded height and 0 for to values.
-                    // ----  NOTE: Essentially the same as current one but it checks the bool instead of the height (in the inline if).
+                    // TODO: Make deletion reset scrollbar and new item placing position
                     DoubleAnimation sectionElementContainerHeightAnimation = new DoubleAnimation
                     {
                         Duration = TimeSpan.FromSeconds(1),
                         From = sectionElementContainer.ActualHeight,
-                        To = sectionElementContainer.ActualHeight != 0 ? 0 : sectionElementContainerRecordedHeight,
+                        To = test2 == false ? 0 : sectionElementContainerRecordedHeight,
                         EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseOut }
                     };
                     sectionElementContainerHeightAnimation.Completed += (sII, eII) =>
@@ -229,28 +228,31 @@ namespace List
                             sectionElementContainer.BeginAnimation(HeightProperty, null);
                             sectionElementContainer.Height = double.NaN;
                         }
-                        (sectionExpansionButton.Content as PackIcon).Kind = (sectionExpansionButton.Content as PackIcon).Kind == PackIconKind.ChevronDown ? PackIconKind.ChevronUp : PackIconKind.ChevronDown;
                     };
                     if (sectionElementContainer.ActualHeight >= sectionElementAdditionButton.ActualHeight) sectionElementContainerRecordedHeight = sectionElementContainer.ActualHeight;
-                    sectionElementContainer.BeginAnimation(HeightProperty, sectionElementContainerHeightAnimation);
+                    sectionElementContainer.BeginAnimation(HeightProperty, sectionElementContainerHeightAnimation, HandoffBehavior.SnapshotAndReplace);
+                    (sectionExpansionButton.Content as PackIcon).Kind = (sectionExpansionButton.Content as PackIcon).Kind == PackIconKind.ChevronDown ? PackIconKind.ChevronUp : PackIconKind.ChevronDown;
+                    test2 = !test2;
                 };
                 sectionDeletionButton.Click += DeleteSection;
                 sectionDeletionMenuItem.Click += DeleteSection;
                 void DeleteSection(object sI, RoutedEventArgs eI)
                 {
+                    // TODO: Make deletion of sections more reliable.
                     ThicknessAnimation sectionMarginClosingAnimation = new ThicknessAnimation
                     {
                         Duration = TimeSpan.FromSeconds(1),
                         To = new Thickness(-Width, 15, Width, 0),
-                        EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseIn }
+                        EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseIn },
+                        FillBehavior = FillBehavior.Stop
                     };
-                    sectionSeparator.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
-                    sectionElementContainer.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
                     (sectionMarginClosingAnimation.CreateClock()).Completed += (sII, eII) =>
                     {
                         list.Children.Remove(sectionSeparator);
                         list.Children.Remove(sectionElementContainer);
                     };
+                    sectionSeparator.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
+                    sectionElementContainer.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
                 };
                 sectionElementContainer.SizeChanged += (sI, eI) =>
                 {
