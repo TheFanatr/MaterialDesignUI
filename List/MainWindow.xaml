@@ -1,0 +1,27 @@
+﻿<Window x:Class="List.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:local="clr-namespace:List"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="350" Width="525"
+        MinHeight="350"
+        MinWidth="608"
+        Name="mainWindow"
+        Background="{DynamicResource MaterialDesignPaper}">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Height="Auto" Width="Auto" Margin="0,35,0,0">
+            <StackPanel Name="list" Height="Auto" Width="Auto" Margin="10"/>
+        </ScrollViewer>
+        <Button Name="plusButton" DockPanel.Dock="Bottom" Style="{StaticResource MaterialDesignFloatingActionButton}" materialDesign:ShadowAssist.ShadowDepth="Depth2" materialDesign:ShadowAssist.Darken="True" VerticalAlignment="Bottom" HorizontalAlignment="Right" Height="50" Width="50" Click="AddSection" Margin="0,0,10,10">
+            <materialDesign:PackIcon Kind="Plus" Height="24" Width="24"/>
+        </Button>
+        <Menu HorizontalAlignment="Left" Height="30" VerticalAlignment="Top" Width="517">
+            <MenuItem Header="File" Height="30" Width="Auto">
+                <MenuItem Header="Add New" HorizontalAlignment="Center" Height="30" Width="Auto" Click="AddSection" Name="addButton"/>
+            </MenuItem>
+        </Menu>
+    </Grid>
+</Window>
