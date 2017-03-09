@@ -238,7 +238,6 @@ namespace List
                 sectionDeletionMenuItem.Click += DeleteSection;
                 void DeleteSection(object sI, RoutedEventArgs eI)
                 {
-                    // TODO: Make deletion of sections more reliable.
                     ThicknessAnimation sectionMarginClosingAnimation = new ThicknessAnimation
                     {
                         Duration = TimeSpan.FromSeconds(1),
@@ -246,10 +245,13 @@ namespace List
                         EasingFunction = new CircleEase() { EasingMode = EasingMode.EaseIn },
                         FillBehavior = FillBehavior.Stop
                     };
-                    (sectionMarginClosingAnimation.CreateClock()).Completed += (sII, eII) =>
+                    sectionMarginClosingAnimation.Completed += (sII, eII) =>
                     {
                         list.Children.Remove(sectionSeparator);
                         list.Children.Remove(sectionElementContainer);
+                        Console.WriteLine("The animation clock has ended.");
+                        Console.WriteLine(list.Children.IndexOf(sectionSeparator));
+                        Console.WriteLine(list.Children.IndexOf(sectionElementContainer));
                     };
                     sectionSeparator.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
                     sectionElementContainer.BeginAnimation(MarginProperty, sectionMarginClosingAnimation);
